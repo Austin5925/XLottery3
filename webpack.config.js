@@ -37,8 +37,15 @@ const isDevelopment = process.env.NODE_ENV !== 'production';
 
 var options = {
   mode: process.env.NODE_ENV || 'development',
+  stats: 'verbose',
+  devServer: {
+    https: true, // 启用HTTPS
+    hot: false, // 禁用热更新
+    client: {
+      webSocketTransport: 'wss', // 使用WSS协议
+    },
+  },
   entry: {
-    newtab: path.join(__dirname, 'src', 'pages', 'Newtab', 'index.jsx'),
     options: path.join(__dirname, 'src', 'pages', 'Options', 'index.jsx'),
     popup: path.join(__dirname, 'src', 'pages', 'Popup', 'index.jsx'),
     background: path.join(__dirname, 'src', 'pages', 'Background', 'index.js'),
@@ -134,6 +141,7 @@ var options = {
   },
   plugins: [
     isDevelopment && new ReactRefreshWebpackPlugin(),
+    isDevelopment ? new webpack.HotModuleReplacementPlugin() : null,
     new CleanWebpackPlugin({ verbose: false }),
     new webpack.ProgressPlugin(),
     // expose and write the allowed env vars on the compiled bundle
@@ -185,12 +193,6 @@ var options = {
       ],
     }),
     new HtmlWebpackPlugin({
-      template: path.join(__dirname, 'src', 'pages', 'Newtab', 'index.html'),
-      filename: 'newtab.html',
-      chunks: ['newtab'],
-      cache: false,
-    }),
-    new HtmlWebpackPlugin({
       template: path.join(__dirname, 'src', 'pages', 'Options', 'index.html'),
       filename: 'options.html',
       chunks: ['options'],
@@ -218,6 +220,7 @@ var options = {
   infrastructureLogging: {
     level: 'info',
   },
+  devtool: isDevelopment ? 'source-map' : undefined,
 };
 
 if (env.NODE_ENV === 'development') {

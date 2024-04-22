@@ -6,8 +6,7 @@
   right: 0px;
   text-align: center;
   height: 100%;
-  padding: 10px;
-  background-color: #282c34;
+  background-color: azure;
 }
 
 .App-logo {
@@ -42,4 +41,42 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+nav {
+  background-color: #007bff; /* 浅蓝色背景 */
+  color: white;
+  padding: 8px 16px; /* 上下8px, 左右16px的内边距 */
+  text-align: center; /* 使文本居中 */
+  position: fixed; /* 固定位置 */
+  top: 0; /* 顶部对齐 */
+  width: 100%; /* 宽度为100% */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 添加轻微阴影效果 */
+  z-index: 1000; /* 确保导航栏在其他内容之上 */
+}
+
+ul {
+  list-style: none; /* 去除默认的列表样式 */
+  padding: 0; /* 去除内边距 */
+  margin: 0; /* 去除外边距 */
+  display: flex; /* 使用弹性盒模型 */
+  justify-content: center; /* 项目水平居中 */
+}
+
+li {
+  margin: 0 55px; /* 每个列表项之间有空间 */
+}
+
+li > :first-child {
+  margin-left: -30px;
+}
+
+a {
+  color: white; /* 链接文本为白色 */
+  text-decoration: none; /* 去除下划线 */
+  font-weight: bold; /* 加粗字体 */
+}
+
+a:hover {
+  text-decoration: underline; /* 鼠标悬停时下划线 */
 }

@@ -1,27 +1,33 @@
 import React from 'react';
-import logo from '../../assets/img/logo.svg';
-import Greetings from '../../containers/Greetings/Greetings';
 import './Popup.css';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import KOLPage from './KOLPage';
+import UserPage from './UserPage';
 
-const Popup = () => {
+function Popup() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/pages/Popup/Popup.jsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React!
-        </a>
-      </header>
-    </div>
+    <Router>
+      <div className="App">
+        <nav>
+          <ul>
+            <li>
+              <Link to="/kol">我是KOL</Link>
+            </li>
+            <li>
+              <Link to="/user">我是用户</Link>
+            </li>
+          </ul>
+        </nav>
+        <div style={{ paddingTop: '50px' }}>
+          <Routes>
+            <Route path="/kol" element={<KOLPage />} />
+            <Route path="/user" element={<UserPage />} />
+            <Route path="/" element={<KOLPage />} />
+          </Routes>
+        </div>
+      </div>
+    </Router>
   );
-};
+}
 
 export default Popup;
