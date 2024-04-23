@@ -17,6 +17,18 @@ contract FairLottery {
     mapping(address => uint256) public balances; // 用户锁仓金额
     mapping(uint256 => address) public prizeWinners; // 获奖者地址
 
+    address[] public usersAddresses;
+    mapping(address => bool) public hasRegistered; // 追踪已注册地址
+
+    // 用户注册参与抽奖
+    function registerToLottery() public {
+        require(block.timestamp <= deadline, "Lottery registration has closed");
+        require(!hasRegistered[msg.sender], "Address has already registered");
+
+        usersAddresses.push(msg.sender); // 添加地址到数组
+        hasRegistered[msg.sender] = true; // 标记此地址已注册
+    }
+
 
     // 构造函数，允许在部署时接收ETH
     constructor() payable {}
@@ -24,20 +36,12 @@ contract FairLottery {
     receive() external payable {}
 
     // KOL 锁仓函数
-    function lockFunds() external payable {
+    function lockFunds(uint256 _expectedTotalPrizeAmount) external payable {
         require(msg.value > 0, "Cannot lock 0 ETH");
+        require(_expectedTotalPrizeAmount == calculateTotalPrizeAmount(), "Incorrect total prize amount provided");
         balances[msg.sender] += msg.value;
         totalLocked += msg.value;
-        require(totalLocked >= calculateTotalPrizeAmount(), "Locked amount must be at least equal to total prize amount");
-    }
-
-
-    // 设置奖品和截止日期
-    function setPrizes(Prize[] memory _prizes) public {
-        require(_prizes.length > 0, "Invalid Params");
-        for (uint i = 0; i < _prizes.length; i++) {
-            prizes.push(_prizes[i]);
-        }
+        require(totalLocked >= _expectedTotalPrizeAmount, "Locked amount must be at least equal to total prize amount");
     }
 
     // 更新用户数量
@@ -74,6 +78,7 @@ contract FairLottery {
 
             if (!selected[randomIndex]) {
                 selected[randomIndex] = true;
+                prizeWinners[count] = usersAddresses[randomIndex]; // 记录获奖者地址
                 winners[count++] = randomIndex;
             }
         }
@@ -81,17 +86,26 @@ contract FairLottery {
         return winners;
     }
 
+
     // 用户领奖
     function claimPrize(uint prizeIndex) public {
-        require(prizeWinners[prizeIndex] == msg.sender, "You are not the winner");
+        require(prizeWinners[prizeIndex] == msg.sender, "You are not the winner for this prize index");
+        require(prizeIndex < prizes.length, "Prize index out of bounds");
         Prize memory prize = prizes[prizeIndex];
-        require(totalLocked - prize.amount >= 0, "Not enough ETH in the contract");
+        require(address(this).balance >= prize.amount, "Not enough ETH in the contract");
+
         payable(msg.sender).transfer(prize.amount);
-        totalLocked -= prize.amount;
+        prizes[prizeIndex].count -= 1; // 减少剩余奖品数量
+
+        if (prizes[prizeIndex].count == 0) {
+            delete prizeWinners[prizeIndex]; // 如果该等级奖品已领完，删除记录
+        }
     }
+
 
     // 计算所有奖项的总金额
     function calculateTotalPrizeAmount() public view returns (uint256 total) {
+        total = 0;
         for (uint i = 0; i < prizes.length; i++) {
             total += prizes[i].amount * prizes[i].count;
         }
@@ -120,8 +134,11 @@ contract FairLottery {
         return prizes[index];
     }
 
-    function setPrize(uint index, uint256 amount, string memory currency, uint count) public {
-        require(index < prizes.length, "Index out of bounds.");
-        prizes[index] = Prize(amount, currency, count);
+    // 设置奖品
+    function setPrizes(Prize[] memory _prizes) public {
+        require(_prizes.length > 0 && _prizes.length <= 3, "Invalid Params");
+        for (uint i = 0; i < _prizes.length; i++) {
+            prizes.push(_prizes[i]);
+        }
     }
 }
