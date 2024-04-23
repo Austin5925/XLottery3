@@ -42,8 +42,9 @@ var options = {
     https: true, // 启用HTTPS
     hot: false, // 禁用热更新
     client: {
-      webSocketTransport: 'wss', // 使用WSS协议
+      webSocketTransport: 'ws',
     },
+    webSocketServer: 'ws',
   },
   entry: {
     options: path.join(__dirname, 'src', 'pages', 'Options', 'index.jsx'),
