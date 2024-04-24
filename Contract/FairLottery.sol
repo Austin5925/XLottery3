@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract FairLottery {
     struct Prize {
@@ -10,30 +11,30 @@ contract FairLottery {
 
     Prize[] public prizes;
     uint public deadline;
-    uint public userCount;
     uint public totalLocked;
 
     mapping(uint256 => bool) public selected; // 标记是否已被选中，减少 gas
     mapping(address => uint256) public balances; // 用户锁仓金额
     mapping(uint256 => address) public prizeWinners; // 获奖者地址
 
-    address[] public usersAddresses;
+    address[] public usersAddresses; // 替代 userCount
     mapping(address => bool) public hasRegistered; // 追踪已注册地址
-
-    // 用户注册参与抽奖
-    function registerToLottery() public {
-        require(block.timestamp <= deadline, "Lottery registration has closed");
-        require(!hasRegistered[msg.sender], "Address has already registered");
-
-        usersAddresses.push(msg.sender); // 添加地址到数组
-        hasRegistered[msg.sender] = true; // 标记此地址已注册
-    }
 
 
     // 构造函数，允许在部署时接收ETH
     constructor() payable {}
     fallback() external payable {}
     receive() external payable {}
+
+
+    // 用户注册参与抽奖
+    function registerToLottery() public {
+        require(block.timestamp < deadline, "Lottery registration has closed");
+        require(!hasRegistered[msg.sender], "Address has already registered");
+
+        usersAddresses.push(msg.sender); // 添加地址到数组
+        hasRegistered[msg.sender] = true; // 标记此地址已注册
+    }
 
     // KOL 锁仓函数
     function lockFunds(uint256 _expectedTotalPrizeAmount) external payable {
@@ -42,12 +43,6 @@ contract FairLottery {
         balances[msg.sender] += msg.value;
         totalLocked += msg.value;
         require(totalLocked >= _expectedTotalPrizeAmount, "Locked amount must be at least equal to total prize amount");
-    }
-
-    // 更新用户数量
-    function updateUserCount(uint _userCount) payable public {
-        require(block.timestamp <= deadline - 3 minutes, "Deadline for updating has passed.");
-        userCount = _userCount;
     }
 
     // 获取随机数
@@ -62,13 +57,12 @@ contract FairLottery {
     // 抽取获奖者
     function drawWinners(uint[] memory prizesCounts) public returns (uint256[] memory winners) {
         require(block.timestamp >= deadline, "It is not yet time to draw winners.");
-        require(userCount > 0, "Error user count.");
+        require(usersAddresses.length > 0, "Error user count.");
 
         uint256 totalPrizes = 0;
         for (uint i = 0; i < prizesCounts.length; i++) {
             totalPrizes += prizesCounts[i];
         }
-        require(totalPrizes <= userCount, "Not enough users to fulfill all prizes.");
 
         winners = new uint256[](totalPrizes);
         uint256 count = 0;
@@ -117,28 +111,27 @@ contract FairLottery {
         return deadline;
     }
 
-    function setDeadline(uint _newDeadline) public {
-        require(_newDeadline > block.timestamp, "New deadline must be in the future.");
-        deadline = _newDeadline;
-    }
-
     function getUserCount() public view returns (uint) {
-        return userCount;
-    }
-
-    function setUserCount(uint _newUserCount) public {
-        userCount = _newUserCount;
+        return usersAddresses.length;
     }
 
     function getPrize(uint index) public view returns (Prize memory) {
         return prizes[index];
     }
 
-    // 设置奖品
-    function setPrizes(Prize[] memory _prizes) public {
-        require(_prizes.length > 0 && _prizes.length <= 3, "Invalid Params");
-        for (uint i = 0; i < _prizes.length; i++) {
-            prizes.push(_prizes[i]);
-        }
+
+    function setDeadline(uint _newDeadline) public onlyOwner {
+        require(_newDeadline > block.timestamp, "New deadline must be in the future.");
+        deadline = _newDeadline;
     }
+
+    function setPrizes(Prize[] memory _prizes) public onlyOwner {
+        require(_prizes.length > 0 && _prizes.length <= 3, "Invalid number of prizes.");
+        for (uint i = 0; i < _prizes.length; i++) {
+            require(_prizes[i].amount > 0, "Prize amount must be greater than zero");
+            require(_prizes[i].count > 0, "Prize count must be greater than zero");
+        }
+        prizes = _prizes;
+    }
+
 }
